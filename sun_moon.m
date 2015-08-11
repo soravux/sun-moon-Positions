@@ -17,12 +17,14 @@ UTC = -4;
 % set to 15 for full moon
 desiredLunarPhase = 1:30;
 
-%latitudes = 60:-10:-60;
-latitudes = location.latitude;
+latitudes = 85:-5:-85;
+%latitudes = location.latitude;
 
-%figure('Position',[100 100 600 600],'Color','white');
+resultats_latitude = {};
 
+idx_lat = 0;
 for i_lat = latitudes
+    idx_lat = idx_lat + 1;
     location.latitude = i_lat; % longitude controls the time in this code
 
     % Filter by Lunar Calendar
@@ -110,50 +112,52 @@ for i_lat = latitudes
         sun_plane = atan( (max_sunz-min_sunz)/(max_sunx-min_sunx))/pi*180;
         moon_plane = atan( (max_moonz-min_moonz)/(max_moonx-min_moonx))/pi*180;
 
-%         %% draw the result for this full moon day
-%         clf;
-%         fontsize = 14;
-%         % draw sun
-%         x = sun.normal(:,1); y = sun.normal(:,2); z = sun.normal(:,3);
-%         x = x(visibility_sun);y = y(visibility_sun);z = z(visibility_sun);
-%         plot3(x,y,z,'ro');  hold on;
-%         % draw moon
-%         x = moon.normal(:,1); y = moon.normal(:,2); z = moon.normal(:,3);
-%         x = x(visibility_moon);y = y(visibility_moon);z = z(visibility_moon);
-%         plot3(x,y,z,'b*');
-%         % draw sphere
-%         [x,y,z] = sphere(50);
-%         lightGrey = 0.8*[1 1 1]; % It looks better if the lines are lighter
-%         surface(x,y,z,'FaceColor', 'none','EdgeColor',lightGrey)
-%         % draw horizon
-%         plot3(x((z==0)),y((z==0)),z((z==0)),'black');
-%         
-%         % Add labels
-%         %xlabel('x');ylabel('y');zlabel('z')
-%         title(sprintf('sun moon position in %s location.lat:%02.f',curFullMoonDate,location.latitude),'FontSize',fontsize);
-%         text(0,-1.3,0,'east','fontsize',fontsize);text(0,1.3,0,'west','FontSize',fontsize)
-%         h=legend(sprintf('sun %02.f',[]),sprintf('full moon %02.f',[]),'Location','southeast');
-%         set(h,'Fontsize',fontsize);
-%         axis off equal
-%         
-%         if location.latitude >=0
-%             view(-70,25);
-%         else
-%             view(70,25);
-%         end
-% 
-%         export_fig(sprintf('%s_lat%02.f.png',curFullMoonDate,location.latitude));
+        fig = figure('Position',[100 100 600 600],'Color','white');
+        %% draw the result for this full moon day
+        clf;
+        fontsize = 14;
+        % draw sun
+        x = sun.normal(:,1); y = sun.normal(:,2); z = sun.normal(:,3);
+        x = x(visibility_sun);y = y(visibility_sun);z = z(visibility_sun);
+        plot3(x,y,z,'ro');  hold on;
+        % draw moon
+        x = moon.normal(:,1); y = moon.normal(:,2); z = moon.normal(:,3);
+        x = x(visibility_moon);y = y(visibility_moon);z = z(visibility_moon);
+        plot3(x,y,z,'b*');
+        % draw sphere
+        [x,y,z] = sphere(50);
+        lightGrey = 0.8*[1 1 1]; % It looks better if the lines are lighter
+        surface(x,y,z,'FaceColor', 'none','EdgeColor',lightGrey)
+        % draw horizon
+        plot3(x((z==0)),y((z==0)),z((z==0)),'black');
+        
+        % Add labels
+        %xlabel('x');ylabel('y');zlabel('z')
+        title(sprintf('sun moon position in %s location.lat:%02.f',curFullMoonDate,location.latitude),'FontSize',fontsize);
+        text(0,-1.3,0,'east','fontsize',fontsize);text(0,1.3,0,'west','FontSize',fontsize)
+        h=legend(sprintf('sun %02.f',[]),sprintf('full moon %02.f',[]),'Location','southeast');
+        set(h,'Fontsize',fontsize);
+        axis off equal
+        
+        if location.latitude >=0
+            view(-70,25);
+        else
+            view(70,25);
+        end
+
+        %export_fig(sprintf('%s_lat%02.f.png',curFullMoonDate,location.latitude));
+        close(fig);
         
         L = [sun.normal; moon.normal];
-        lambda_max(i_d) = max(svd(pinv(L')));
+        lambda_max(i_d) = max(sqrt(svd(pinv(L'))));
     end
-    figure;
-    cm = parula(16);
+    fig = figure;
+    cm = fliplr(parula(100));
     colormap(cm);
-    colors = cm(abs(15 - cell2mat(lunarPhases))+1,:);
+    colors = cm(round(0.5 * ( 1 + cos(abs(15 - cell2mat(lunarPhases))/15 * pi)) * 99 + 1),:);
     scatter(1:length(lambda_max), lambda_max, 1, colors);
     cb = colorbar;
-    title(cb,'Lunar phase')
+    title(cb,'Moon illumination')
     hold on;
     for i = 1:length(lambda_max) - 1
         plot([i i+1], lambda_max(i:i+1), 'Color', colors(i,:));
@@ -161,5 +165,8 @@ for i_lat = latitudes
     hold off;
     xlabel('Day');
     ylabel('Maximum gain');
-    export_fig('maximum_gain.pdf', '-transparent')
+    %export_fig('maximum_gain.pdf', '-transparent')
+    %export_fig('maximum_gain.png', '-transparent')
+    close(fig);
+    resultats_latitude{idx_lat} = lambda_max;
 end
